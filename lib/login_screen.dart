@@ -17,16 +17,23 @@ final GoogleSignIn _googleSignIn = new GoogleSignIn();
 
 
 class LoginPage extends State<MyLoginScreen> {
-   
+
+   bool isProgress = false;
+
    Future<FirebaseUser> _signIn() async
    {
+
       GoogleSignInAccount googleSignInAccount = await _googleSignIn.signIn();
       GoogleSignInAuthentication gSA = await googleSignInAccount.authentication;
       
       FirebaseUser user = await _auth.signInWithGoogle(
          idToken: gSA.idToken, accessToken: gSA.accessToken
       );
-      
+
+      setState(() {
+         isProgress = true;
+      });
+
       print("User Name: ${user.displayName}");
 
       SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -36,6 +43,57 @@ class LoginPage extends State<MyLoginScreen> {
       preferences.setString(Constants.EMAIL, user.email);
 
       return user;
+   }
+
+   getProgress() {
+      if(isProgress)
+      {
+         return Center(
+            child: Container(
+               decoration: BoxDecoration(
+                  color: Colors.blue[200],
+                  borderRadius: BorderRadius.circular(10.0)
+               ),
+               width: 300.0,
+               height: 200.0,
+               alignment: AlignmentDirectional.center,
+               child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                     Center(
+                        child: SizedBox(
+                           height: 50.0,
+                           width: 50.0,
+                           child: CircularProgressIndicator(
+                              value: null,
+                              strokeWidth: 7.0,
+                           ),
+                        ),
+                     ),
+                     Container(
+                        margin: EdgeInsets.only(top: 25.0),
+                        child: Center(
+                           child: RichText(
+                              text: TextSpan(
+                                 text: "Please wait...",
+                                 style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16.0
+                                 )
+                              ),
+                           ),
+                        ),
+                     ),
+                  ],
+               ),
+            ),
+         );
+      }
+      else
+      {
+         return Container();
+      }
    }
    
     @override
@@ -61,11 +119,20 @@ class LoginPage extends State<MyLoginScreen> {
                        RichText(text: TextSpan(text: "Sign in"),)
                     ],
                  ),
-                 onPressed: ()=> _signIn().then((FirebaseUser user)=>print(
-                  Navigator.pushNamed(context, "/home_screen")
-                 )).catchError((e)=>print(e)),
-              )
+                 onPressed: ()=> _signIn().then((FirebaseUser user)=> _navigateToHome())
+                    .catchError((e)=>print(e)),
+              ),
+               getProgress()
            ],
         );
+    }
+
+    void _navigateToHome()
+    {
+       setState(() {
+          isProgress = false;
+       });
+
+       Navigator.pushNamed(context, "/home_screen");
     }
 }
